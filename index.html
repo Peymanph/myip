@@ -1,0 +1,1077 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEXUS · IP &amp; Leak Analyzer</title>
+<meta name="description" content="Exact public IP, pinpoint geolocation on a live dark map, WebRTC / dual-stack / timezone leak tests. No logs, 100% client-side.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --bg:#04070c; --panel:rgba(9,17,26,.78); --line:rgba(47,243,224,.16);
+  --cy:#2ff3e0; --cy-dim:#1b8f86; --ink:#dff7f4;
+  --ok:#39ff88; --warn:#ffb020; --bad:#ff4d6d; --info:#57b6ff; --mut:#93b3c0;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --disp:'Space Grotesk',system-ui,-apple-system,Segoe UI,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--disp);
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh}
+.bg{position:fixed;inset:0;z-index:-2;
+  background:
+    radial-gradient(900px 520px at 12% -8%,rgba(47,243,224,.16),transparent 60%),
+    radial-gradient(760px 480px at 92% 4%,rgba(87,182,255,.13),transparent 62%),
+    radial-gradient(1000px 700px at 50% 118%,rgba(47,243,224,.08),transparent 60%),#04070c}
+.bg:after{content:"";position:absolute;inset:0;
+  background-image:linear-gradient(rgba(47,243,224,.045) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(47,243,224,.045) 1px,transparent 1px);
+  background-size:46px 46px;
+  -webkit-mask-image:radial-gradient(circle at 50% 30%,#000,transparent 78%);
+          mask-image:radial-gradient(circle at 50% 30%,#000,transparent 78%)}
+.wrap{max-width:1240px;margin:0 auto;padding:26px 20px 64px}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:26px}
+.brand{display:flex;align-items:center;gap:13px}
+.glyph{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;
+  background:linear-gradient(150deg,#0b1f2a,#071319);border:1px solid var(--line);
+  box-shadow:0 0 22px rgba(47,243,224,.22),inset 0 0 16px rgba(47,243,224,.08);
+  font-family:var(--mono);font-weight:700;color:var(--cy);font-size:19px}
+.brand h1{margin:0;font-size:19px;letter-spacing:.24em;font-weight:700}
+.brand h1 span{color:var(--cy)}
+.brand small{display:block;color:var(--mut);font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.2em;margin-top:3px}
+.spacer{flex:1}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;
+  background:rgba(47,243,224,.07);border:1px solid var(--line);color:var(--ink);
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.09em}
+.pill.dead{background:rgba(255,77,109,.08);border-color:rgba(255,77,109,.4);color:var(--bad)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 9px var(--ok);
+  animation:pulse 1.6s infinite}
+.pill.dead .dot{background:var(--bad);box-shadow:0 0 9px var(--bad)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.75)}}
+button,.btn{font-family:var(--mono);cursor:pointer;border-radius:9px;
+  background:rgba(47,243,224,.09);border:1px solid var(--line);color:var(--cy);
+  padding:9px 15px;font-size:12px;letter-spacing:.09em;transition:.16s}
+button:hover,.btn:hover{background:rgba(47,243,224,.2);border-color:var(--cy);
+  transform:translateY(-1px);box-shadow:0 6px 18px rgba(47,243,224,.16)}
+button:disabled{opacity:.45;cursor:wait;transform:none}
+button.ghost{background:transparent}
+.hero{position:relative;border:1px solid var(--line);border-radius:20px;overflow:hidden;
+  background:linear-gradient(140deg,rgba(11,26,34,.9),rgba(6,12,19,.86));
+  padding:30px 30px 26px;margin-bottom:20px;
+  box-shadow:0 26px 70px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.04)}
+.hero:before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--cy),#57b6ff,transparent);opacity:.85}
+.kicker{font-family:var(--mono);font-size:10.5px;letter-spacing:.34em;color:var(--cy-dim);
+  text-transform:uppercase;margin-bottom:12px}
+.ip{font-family:var(--mono);font-weight:700;line-height:1.05;letter-spacing:-.02em;
+  font-size:clamp(30px,6.6vw,66px);color:#eafffd;text-shadow:0 0 34px rgba(47,243,224,.4);
+  word-break:break-all}
+.ip.err{color:var(--bad);font-size:clamp(22px,4vw,38px);text-shadow:none}
+.skel{color:#4b7a86}
+.iprow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px}
+.tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;padding:6px 11px;border-radius:7px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);color:#b9d6de}
+.tag b{color:var(--cy);font-weight:700}
+.tag.flag{font-size:15px;padding:4px 9px}
+.agree{margin-top:16px;font-family:var(--mono);font-size:12.5px;color:#a6c9d2;line-height:1.7}
+.agree b{color:var(--ok)}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(12,1fr);margin-bottom:16px}
+.card{grid-column:span 4;background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  padding:18px 19px;backdrop-filter:blur(9px);box-shadow:0 16px 44px rgba(0,0,0,.42)}
+.card h3{margin:0 0 14px;font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;
+  color:var(--cy-dim);text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+.card h3 em{font-style:normal;color:var(--mut);letter-spacing:.1em;font-size:10px}
+.mini{grid-column:span 3}
+.wide{grid-column:span 8}
+.full{grid-column:span 12}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;
+  border-bottom:1px dashed rgba(255,255,255,.07);font-size:13.5px}
+.kv:last-child{border-bottom:0}
+.kv span{color:var(--mut);font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;flex:0 0 auto}
+.kv b{font-weight:500;text-align:right;word-break:break-word}
+.kv b.mono{font-family:var(--mono);font-size:12.5px;color:var(--cy)}
+.gauge{display:flex;align-items:center;gap:16px}
+.gauge svg{flex:0 0 auto}
+.gscore{font-family:var(--mono);font-size:40px;font-weight:700;line-height:1}
+.gverdict{font-family:var(--mono);font-size:12px;letter-spacing:.14em;margin-top:6px}
+.gsub{font-size:12.5px;color:var(--mut);margin-top:9px;line-height:1.55}
+.meta{margin-top:16px;border-top:1px dashed rgba(255,255,255,.09);padding-top:8px}
+#map{height:340px;border-radius:12px;border:1px solid rgba(47,243,224,.22);background:#070c12;z-index:1}
+.mapbox{position:relative}
+.lswitch{position:absolute;top:11px;right:11px;z-index:1001;display:flex;gap:5px;
+  background:rgba(4,9,13,.8);border:1px solid var(--line);border-radius:9px;padding:5px;
+  backdrop-filter:blur(7px)}
+.lswitch button{padding:5px 9px;font-size:10.5px;border-radius:6px;letter-spacing:.1em}
+.lswitch button.on{background:rgba(47,243,224,.22);border-color:var(--cy);color:#eafffd;
+  box-shadow:0 0 14px rgba(47,243,224,.28)}
+.map-sat .leaflet-tile-pane{filter:brightness(.72) contrast(1.1) saturate(.86)}
+.map-street .leaflet-tile-pane{filter:brightness(.86) contrast(1.04) saturate(.92)}
+.map-topo .leaflet-tile-pane{filter:brightness(.9)}
+.leaflet-control-attribution{background:rgba(4,9,13,.76)!important;
+  font-family:var(--mono);font-size:9.5px!important;color:#8fb3bd!important}
+.leaflet-control-attribution a,.leaflet-container a.leaflet-attribution-prefix{color:#2ff3e0!important}
+.leaflet-control-zoom a{background:rgba(6,14,19,.86)!important;color:var(--cy)!important;
+  border-color:var(--line)!important}
+.leaflet-bar a:hover{background:rgba(47,243,224,.16)!important}
+.mapfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+  margin-top:11px;font-family:var(--mono);font-size:11.5px;color:var(--mut)}
+.coords{color:var(--cy);letter-spacing:.06em}
+.pin{position:relative;width:16px;height:16px}
+.pin i{position:absolute;inset:3px;border-radius:50%;background:var(--cy);
+  box-shadow:0 0 12px var(--cy),0 0 3px #fff inset}
+.pin:before{content:"";position:absolute;inset:-4px;border-radius:50%;
+  border:2px solid rgba(47,243,224,.7);animation:ring 2s infinite}
+@keyframes ring{0%{transform:scale(.55);opacity:1}100%{transform:scale(2.6);opacity:0}}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#08131a;color:var(--ink);
+  border:1px solid var(--line);font-family:var(--mono);font-size:12px}
+.lab{display:grid;gap:16px;grid-template-columns:repeat(12,1fr);margin-bottom:16px}
+.test{grid-column:span 4;background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  padding:18px 19px;backdrop-filter:blur(9px);position:relative;overflow:hidden;
+  display:flex;flex-direction:column}
+.test:after{content:"";position:absolute;top:0;left:0;width:100%;height:2px;
+  background:linear-gradient(90deg,transparent,var(--cy-dim),transparent);opacity:.6}
+.test .num{font-family:var(--mono);font-size:10.5px;color:var(--cy-dim);letter-spacing:.2em}
+.test h4{margin:8px 0 6px;font-size:16.5px}
+.test p{margin:0 0 13px;font-size:12.5px;color:var(--mut);line-height:1.6;min-height:74px}
+.verdict{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12.5px;
+  letter-spacing:.07em;padding:10px 12px;border-radius:9px;margin-bottom:11px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--mut)}
+.verdict.ok{background:rgba(57,255,136,.09);border-color:rgba(57,255,136,.4);color:var(--ok)}
+.verdict.warn{background:rgba(255,176,32,.1);border-color:rgba(255,176,32,.42);color:var(--warn)}
+.verdict.bad{background:rgba(255,77,109,.1);border-color:rgba(255,77,109,.45);color:var(--bad)}
+.verdict i{width:8px;height:8px;border-radius:50%;background:currentColor;
+  box-shadow:0 0 9px currentColor;flex:0 0 auto}
+.detail{font-family:var(--mono);font-size:11.5px;line-height:1.85;color:#a9c6cf;
+  background:rgba(0,0,0,.34);border:1px solid rgba(255,255,255,.06);border-radius:9px;
+  padding:10px 12px;height:172px;overflow-y:auto;overflow-x:hidden;
+  white-space:pre-wrap;word-break:break-word}
+.detail b{color:var(--cy)}
+.detail .hl{color:var(--bad);font-weight:700}
+.findings{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  padding:18px 19px;margin-bottom:16px;backdrop-filter:blur(9px)}
+.findings h3{margin:0 0 6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;
+  color:var(--cy-dim);text-transform:uppercase}
+.finding{display:grid;grid-template-columns:96px 1fr;gap:14px;padding:12px 0;
+  border-bottom:1px dashed rgba(255,255,255,.07)}
+.finding:last-child{border-bottom:0}
+.sev{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;padding:5px 8px;border-radius:6px;
+  height:fit-content;text-align:center}
+.sev.good{background:rgba(57,255,136,.12);color:var(--ok);border:1px solid rgba(57,255,136,.35)}
+.sev.info{background:rgba(87,182,255,.12);color:var(--info);border:1px solid rgba(87,182,255,.35)}
+.sev.warn{background:rgba(255,176,32,.12);color:var(--warn);border:1px solid rgba(255,176,32,.38)}
+.sev.bad{background:rgba(255,77,109,.12);color:var(--bad);border:1px solid rgba(255,77,109,.4)}
+.finding .ft{font-size:13.5px;margin-bottom:3px}
+.finding .fb{font-family:var(--mono);font-size:11.5px;color:var(--mut);line-height:1.65}
+.finding .fb code{color:var(--cy)}
+details.method{background:rgba(7,14,21,.7);border:1px solid var(--line);border-radius:16px;
+  padding:0 19px;margin-bottom:20px}
+details.method summary{cursor:pointer;list-style:none;padding:16px 0;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;color:var(--cy);
+  text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+details.method summary::-webkit-details-marker{display:none}
+details.method summary:after{content:"+";font-size:19px;color:var(--cy-dim)}
+details.method[open] summary:after{content:"–"}
+.methodbody{padding:0 0 20px;font-size:13.5px;line-height:1.75;color:#a9c6cf}
+.methodbody h5{color:var(--ink);font-size:13.5px;margin:16px 0 5px;letter-spacing:.04em}
+.methodbody h5:first-child{margin-top:0}
+.methodbody code{font-family:var(--mono);font-size:12.5px;color:var(--cy);
+  background:rgba(47,243,224,.08);padding:1px 5px;border-radius:4px}
+footer{border-top:1px solid rgba(255,255,255,.07);padding-top:18px;
+  font-family:var(--mono);font-size:11.5px;color:var(--mut);line-height:1.8;
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.lookup{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.lookup input{font-family:var(--mono);font-size:12.5px;padding:9px 12px;border-radius:9px;
+  background:rgba(0,0,0,.42);border:1px solid var(--line);color:var(--ink);width:186px;outline:none}
+.lookup input:focus{border-color:var(--cy);box-shadow:0 0 0 3px rgba(47,243,224,.14)}
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);opacity:0;
+  background:#0a1a20;border:1px solid var(--cy);color:var(--cy);font-family:var(--mono);
+  font-size:12.5px;padding:11px 18px;border-radius:10px;pointer-events:none;transition:.25s;
+  z-index:1200;box-shadow:0 12px 34px rgba(0,0,0,.6)}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+.srcrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.srcrow span{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;padding:4px 8px;
+  border-radius:6px;border:1px solid rgba(255,255,255,.1);color:var(--mut);
+  background:rgba(255,255,255,.03)}
+.srcrow span.ok{color:var(--ok);border-color:rgba(57,255,136,.35);background:rgba(57,255,136,.07)}
+.srcrow span.no{color:var(--bad);border-color:rgba(255,77,109,.35);background:rgba(255,77,109,.07)}
+.srcrow span.skip{opacity:.5}
+@media(max-width:1080px){.mini{grid-column:span 6}.card,.wide{grid-column:span 12}}
+@media(max-width:760px){.test{grid-column:span 12}}
+@media(max-width:620px){.wrap{padding:18px 13px 48px}.hero{padding:22px 17px}
+  .mini{grid-column:span 12}.finding{grid-template-columns:1fr;gap:7px}.sev{width:96px}
+  .lookup input{width:100%}}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="wrap">
+
+<header>
+  <div class="brand">
+    <div class="glyph">◈</div>
+    <div><h1>NEXUS<span>·</span>IP</h1><small>NETWORK IDENTITY &amp; LEAK ANALYZER</small></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="lookup">
+    <input id="q" placeholder="lookup any IP … 1.1.1.1" spellcheck="false">
+    <button id="btnLookup" class="ghost">LOOKUP</button>
+  </div>
+  <div class="pill" id="statusPill"><i class="dot"></i><span id="statusTxt">SCANNING</span></div>
+  <button id="btnRescan">↻ RE-SCAN</button>
+</header>
+
+<section class="hero">
+  <div class="kicker">Your public IP · what the internet sees</div>
+  <div class="ip" id="bigIp"><span class="skel">resolving…</span></div>
+  <div class="iprow">
+    <button id="btnCopyIp">⧉ COPY IP</button>
+    <button id="btnCopyLink" class="ghost">⧉ COPY LINK</button>
+    <button id="btnWhois" class="ghost">↗ WHOIS</button>
+  </div>
+  <div class="tags" id="tags"><span class="tag skel">detecting…</span></div>
+  <div class="agree" id="agree"></div>
+</section>
+
+<div class="grid">
+  <div class="card">
+    <h3>Exposure score <em id="scoreLbl">—</em></h3>
+    <div class="gauge">
+      <svg width="118" height="118" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="11"/>
+        <circle id="arc" cx="60" cy="60" r="50" fill="none" stroke="var(--cy)" stroke-width="11"
+          stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314"
+          transform="rotate(-90 60 60)" style="transition:stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1),stroke .5s"/>
+        <text id="arcTxt" x="60" y="67" text-anchor="middle" font-family="JetBrains Mono,monospace"
+          font-size="34" font-weight="700" fill="#eafffd">–</text>
+      </svg>
+      <div>
+        <div class="gverdict" id="verdict" style="color:var(--mut)">ANALYZING</div>
+        <div class="gsub" id="scoreSub">Running leak probes and correlating sources…</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div id="scoreMeta"><div class="kv"><span>state</span><b class="skel">initialising…</b></div></div>
+      <div class="srcrow" id="srcRow"></div>
+    </div>
+  </div>
+
+  <div class="card wide">
+    <h3>Pinpoint location <em id="mapAcc">—</em></h3>
+    <div class="mapbox">
+      <div id="map"></div>
+      <div class="lswitch" id="layerSwitch">
+        <button data-layer="sat" class="on">SAT</button>
+        <button data-layer="street">STREET</button>
+        <button data-layer="topo">TOPO</button>
+      </div>
+    </div>
+    <div class="mapfoot">
+      <div class="coords" id="coords">lat — · lon —</div>
+      <div id="mapMeta">—</div>
+      <div style="display:flex;gap:8px">
+        <button class="ghost" id="btnCoords">⧉ COORDS</button>
+        <button class="ghost" id="btnMaps">↗ OPEN MAP</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mini" id="cardLoc"><h3>Location</h3><div id="locList"><div class="kv skel">resolving…</div></div></div>
+  <div class="card mini" id="cardNet"><h3>Network identity</h3><div id="netList"><div class="kv skel">resolving…</div></div></div>
+  <div class="card mini" id="cardTime"><h3>Time</h3><div id="timeList"><div class="kv skel">resolving…</div></div></div>
+  <div class="card mini" id="cardBrw"><h3>Browser exposure</h3><div id="brwList"><div class="kv skel">reading…</div></div></div>
+</div>
+
+<div class="grid" style="margin-bottom:0">
+  <div class="full" style="padding:4px 2px 0"><div class="kicker">Leak lab · three independent probes</div></div>
+</div>
+<div class="lab">
+  <div class="test">
+    <div class="num">PROBE 01</div>
+    <h4>WebRTC ICE leak</h4>
+    <p>Opens a real peer connection and reads back every ICE candidate the browser
+       exposes. A <b>server-reflexive</b> candidate that is not your HTTP IP means
+       WebRTC is bypassing your tunnel.</p>
+    <div class="verdict" id="v1"><i></i><span>NOT RUN</span></div>
+    <div class="detail" id="d1">Press RUN to collect ICE candidates.</div>
+    <div style="margin-top:11px"><button id="run1">▶ RUN WEBRTC TEST</button></div>
+  </div>
+  <div class="test">
+    <div class="num">PROBE 02</div>
+    <h4>Dual-stack (IPv4 / IPv6)</h4>
+    <p>Asks an IPv4-only and an IPv6-only resolver which address family they see.
+       If IPv6 is live while your tunnel only carries IPv4, the v6 path geolocates
+       back to your real ISP.</p>
+    <div class="verdict" id="v2"><i></i><span>NOT RUN</span></div>
+    <div class="detail" id="d2">Press RUN to query both address families.</div>
+    <div style="margin-top:11px"><button id="run2">▶ RUN DUAL-STACK TEST</button></div>
+  </div>
+  <div class="test">
+    <div class="num">PROBE 03</div>
+    <h4>Timezone &amp; locale mismatch</h4>
+    <p>Compares the browser's real timezone, language and clock against the
+       timezone your IP claims. A mismatch is the classic "VPN on, wall clock
+       still home" fingerprint.</p>
+    <div class="verdict" id="v3"><i></i><span>NOT RUN</span></div>
+    <div class="detail" id="d3">Press RUN to compare browser locale with IP geolocation.</div>
+    <div style="margin-top:11px"><button id="run3">▶ RUN LOCALE TEST</button></div>
+  </div>
+</div>
+
+<div class="findings">
+  <h3>Findings</h3>
+  <div id="findings"><div class="kv skel">Waiting for probes…</div></div>
+</div>
+
+<details class="method">
+  <summary>Technical methodology</summary>
+  <div class="methodbody">
+    <h5>What this page is</h5>
+    A fully static, client-side analyzer. There is no backend of ours: every number
+    is fetched directly by <em>your</em> browser from public CORS-enabled resolvers,
+    or measured inside your browser. Nothing is stored, posted or logged by us —
+    check the network tab and you will see only third-party resolver calls.
+
+    <h5>IP resolution, cross-check and fallback</h5>
+    The primary source is <code>ipwho.is</code>, which returns IP, coordinates,
+    ASN, ISP and timezone in one call. It is corroborated by
+    <code>ipinfo.io/json</code> and by a raw <code>ipv4.icanhazip.com</code> fetch.
+    Public resolvers rate-limit by source IP, so when the primary refuses service
+    the page transparently falls back to <code>ipinfo.io</code> and says which
+    source answered. Disagreement between independent resolvers is itself a
+    finding: it usually means requests are leaving through more than one egress.
+
+    <h5>Geolocation precision</h5>
+    Public IP geolocation is city-level, typically a radius of roughly
+    <code>1–15 km</code> depending on how densely the ISP allocated that prefix.
+    The marker is the registered centroid of your network block and the dashed
+    circle is a realistic accuracy band — it is <em>not</em> your street, and any
+    site claiming metre accuracy from an IP alone is guessing. Coordinates are
+    printed to five decimals exactly as the resolver returned them.
+
+    <h5>Probe 01 — WebRTC</h5>
+    An <code>RTCPeerConnection</code> is created against public STUN servers with a
+    data channel, an offer is generated, and every <code>onicecandidate</code> is
+    collected for ~3 s. Candidates of type <code>srflx</code>/<code>prflx</code>
+    carry your true public address as seen by the STUN server; <code>host</code>
+    candidates carry your LAN address (Chrome replaces these with <code>.local</code>
+    mDNS names, reported as protected). Any reflexive address that differs from
+    your HTTP IP is reported as a leak.
+
+    <h5>Probe 02 — dual-stack</h5>
+    Parallel fetches to an IPv4-only and an IPv6-only echo endpoint. When both
+    succeed the v6 address is geolocated through the same resolvers and compared
+    with the v4 centroid. Different countries or different ASNs on the two
+    families is a split-tunnel signature.
+
+    <h5>Probe 03 — locale</h5>
+    <code>Intl.DateTimeFormat().resolvedOptions().timeZone</code> and
+    <code>navigator.language</code> are compared with the timezone id reported for
+    your IP, and the UTC offsets are compared numerically. A legitimate privacy
+    tool with a fixed exit also trips this — it is a mismatch signal, not proof of
+    failure. If the resolver did not return a timezone, the probe reports
+    <em>inconclusive</em> instead of claiming agreement.
+
+    <h5>Exposure score</h5>
+    Starts at 100 and drops only on observed, reproducible findings: a WebRTC
+    address mismatch, a v4/v6 geolocation split, a timezone mismatch, disagreement
+    between resolvers, or an exposed LAN address. Network <em>type</em> (datacenter,
+    hosting, VPN-looking ASN) is shown as context and never scored — running a VPS
+    is not a vulnerability. Probes that could not complete are shown as
+    inconclusive and do not count as clean.
+  </div>
+</details>
+
+<footer>
+  <div>◈ NEXUS·IP — static page, client-side only, zero logging · no cookies · no analytics</div>
+  <div>sources: ipwho.is · ipinfo.io · icanhazip · STUN · Esri · OpenTopoMap</div>
+</footer>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ================================================================
+   NEXUS·IP — every byte of analysis happens in this tab.
+   ================================================================ */
+const $ = s => document.querySelector(s);
+const toastEl = $('#toast');
+function toast(m){ toastEl.textContent = m; toastEl.classList.add('on');
+  clearTimeout(toastEl._t); toastEl._t = setTimeout(()=>toastEl.classList.remove('on'), 1900); }
+async function copy(t, label){
+  try{ await navigator.clipboard.writeText(t); toast('copied · '+(label||'')); }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta);
+    ta.select(); let ok=false; try{ ok=document.execCommand('copy'); }catch(_){}
+    ta.remove(); toast(ok?('copied · '+(label||'')):'copy failed'); }
+}
+const esc = s => String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function kv(k, v, mono){
+  return '<div class="kv"><span>'+esc(k)+'</span><b class="'+(mono?'mono':'')+'">'+
+    (v==null||v===''?'<span class="skel">—</span>':esc(v))+'</b></div>';
+}
+function kvIf(k, v, mono){ return (v==null||v==='') ? '' : kv(k,v,mono); }
+
+const S = { geo:null, sources:{}, raw4:null, raw6:null, query:null, findings:[],
+            map:null, marker:null, circle:null, scored:false };
+
+/* ------------- helpers ------------- */
+async function jget(url, ms){ const c=new AbortController();
+  const t=setTimeout(()=>c.abort(), ms||9000);
+  try{ const r=await fetch(url,{signal:c.signal,cache:'no-store'});
+    if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
+    return await r.json(); } finally{ clearTimeout(t); } }
+async function tget(url, ms){ const c=new AbortController();
+  const t=setTimeout(()=>c.abort(), ms||9000);
+  try{ const r=await fetch(url,{signal:c.signal,cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return (await r.text()).trim(); } finally{ clearTimeout(t); } }
+
+const ipValid = s => /^\d{1,3}(\.\d{1,3}){3}$/.test(s||'') || /^[0-9a-f]{0,4}(:[0-9a-f]{0,4})+$/i.test(s||'');
+function isV6(s){ return s && s.indexOf(':')>=0; }
+function isPrivate(s){
+  if(!s) return true;
+  if(/^10\./.test(s)||/^192\.168\./.test(s)||/^127\./.test(s)) return true;
+  const m=s.match(/^172\.(\d+)\./); if(m&&+m[1]>=16&&+m[1]<=31) return true;
+  return /^(fe80|fc00|fd)/i.test(s);
+}
+function flagEmoji(cc){
+  if(!cc||cc.length!==2) return '';
+  return cc.toUpperCase().split('').map(c=>String.fromCodePoint(127397+c.charCodeAt(0))).join('');
+}
+function offsetHours(tz){
+  try{
+    const dtf=new Intl.DateTimeFormat('en-US',{timeZone:tz,year:'numeric',month:'2-digit',
+      day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    const p={}; dtf.formatToParts(new Date()).forEach(x=>p[x.type]=x.value);
+    const asUTC=Date.UTC(+p.year,+p.month-1,+p.day,(+p.hour)%24,+p.minute,+p.second);
+    return Math.round((asUTC-Date.now())/60000)/60;
+  }catch(e){ return null; }
+}
+function fmtOffset(h){
+  if(h==null) return null;
+  const s=h<0?'-':'+', a=Math.abs(h), hh=String(Math.floor(a)), mm=String(Math.round((a-Math.floor(a))*60)).padStart(2,'0');
+  return 'UTC'+s+hh+':'+mm;
+}
+function addFinding(sev,title,body){ S.findings.push({sev,title,body}); }
+function baselineIp(){ return (S.geo&&S.geo.ip) || S.raw4 || null; }
+
+/* ------------- resolvers ------------- */
+function fromIpwho(g){
+  if(!g || g.success===false || !g.ip) return null;
+  const tz=g.timezone||{}, cn=g.connection||{};
+  return { source:'ipwho.is', ip:g.ip, type:g.type||null,
+    continent:g.continent, continent_code:g.continent_code,
+    country:g.country, country_code:g.country_code,
+    region:g.region, region_code:g.region_code, city:g.city,
+    latitude:g.latitude, longitude:g.longitude, postal:g.postal,
+    capital:g.capital, calling_code:g.calling_code,
+    hostname:null, flag:g.flag&&g.flag.emoji,
+    connection:{asn:cn.asn, org:cn.org, isp:cn.isp, domain:cn.domain, type:cn.type||null},
+    timezone:{ id:tz.id||null, utc:tz.utc||null, abbr:tz.abbr||null,
+      is_dst:tz.is_dst, offset:(tz.offset==null?null:tz.offset/3600)} };
+}
+function fromIpinfo(j){
+  if(!j || j.error || !j.ip) return null;
+  let lat=null, lon=null;
+  if(j.loc){ const p=String(j.loc).split(','); lat=parseFloat(p[0]); lon=parseFloat(p[1]);
+    if(!isFinite(lat)||!isFinite(lon)) { lat=lon=null; } }
+  let asn=null, org=null;
+  const mo=String(j.org||'').match(/^\s*(AS\d+)\s*(.*)$/);
+  if(mo){ asn=+mo[1].slice(2); org=mo[2]||null; } else org=j.org||null;
+  const oh = j.timezone ? offsetHours(j.timezone) : null;
+  return { source:'ipinfo.io', ip:j.ip, type:isV6(j.ip)?'IPv6':'IPv4',
+    continent:null, continent_code:null,
+    country:j.country||null, country_code:j.country||null,
+    region:j.region||null, region_code:null, city:j.city||null,
+    latitude:lat, longitude:lon, postal:j.postal||null,
+    capital:null, calling_code:null, hostname:j.hostname||null,
+    flag:flagEmoji(j.country),
+    connection:{asn:asn, org:org, isp:org, domain:null},
+    timezone:{ id:j.timezone||null, utc:fmtOffset(oh), abbr:null, is_dst:null, offset:oh} };
+}
+async function resolveGeo(q){
+  S.sources = {};
+  const target = q || '';
+  // 1) primary — with one retry, resolvers rate-limit aggressively
+  for(let i=0;i<2;i++){
+    try{ const g = fromIpwho(await jget('https://ipwho.is/'+target, 9000));
+      if(g){ S.sources['ipwho.is']='ok'; return g; } }
+    catch(e){ S.sources['ipwho.is'] = (e.status===429)?'rate-limited':'error '+(e.status||'');
+      if(i===0){ await new Promise(r=>setTimeout(r,600)); } }
+  }
+  // 2) fallback
+  const fb = target ? 'https://ipinfo.io/'+target+'/json' : 'https://ipinfo.io/json';
+  try{ const j = await jget(fb, 9000); const g = fromIpinfo(j);
+    if(g){ S.sources['ipinfo.io']='ok'; return g; } S.sources['ipinfo.io']='bad payload'; }
+  catch(e){ S.sources['ipinfo.io']='error '+(e.status||''); }
+  return null;
+}
+async function fetchRaw(v){
+  const list = v===6 ? ['https://ipv6.icanhazip.com','https://api6.ipify.org?format=json']
+                     : ['https://ipv4.icanhazip.com','https://api.ipify.org?format=json'];
+  for(const u of list){
+    try{ const t = await tget(u, 8000);
+      let ip = t;
+      try{ const j = JSON.parse(t); ip = j.ip || t; }catch(_){}
+      ip = String(ip).trim();
+      if(ipValid(ip)) return ip;
+    }catch(e){}
+  }
+  return null;
+}
+
+/* ------------- scan ------------- */
+async function scan(q){
+  S.findings = []; S.query = q || null; S.scored = false;
+  $('#statusPill').classList.remove('dead');
+  $('#statusTxt').textContent = 'SCANNING';
+  $('#bigIp').className = 'ip';
+  $('#bigIp').innerHTML = '<span class="skel">resolving…</span>';
+  $('#tags').innerHTML = '<span class="tag skel">detecting…</span>';
+  $('#agree').textContent = '';
+  $('#findings').innerHTML = '<div class="kv skel">Running probes…</div>';
+  ['#v1','#v2','#v3'].forEach(s=>{ const e=$(s); e.className='verdict'; e.innerHTML='<i></i><span>NOT RUN</span>'; });
+  $('#d1').textContent='Press RUN to collect ICE candidates.';
+  $('#d2').textContent='Press RUN to query both address families.';
+  $('#d3').textContent='Press RUN to compare browser locale with IP geolocation.';
+  $('#locList').innerHTML='<div class="kv skel">resolving…</div>';
+  $('#netList').innerHTML='<div class="kv skel">resolving…</div>';
+  $('#timeList').innerHTML='<div class="kv skel">resolving…</div>';
+  setGauge('–',0,'var(--mut)','ANALYZING','Correlating resolvers and running probes…');
+  $('#srcRow').innerHTML='';
+
+  const isQ = !!q;
+  const [geo, r4, r6, ii] = await Promise.allSettled([
+    resolveGeo(q),
+    isQ ? Promise.resolve(null) : fetchRaw(4),
+    isQ ? Promise.resolve(null) : fetchRaw(6),
+    isQ ? Promise.resolve(null) : jget('https://ipinfo.io/json', 8000)
+  ]);
+  S.geo = geo.status==='fulfilled' ? geo.value : null;
+  S.raw4 = r4.status==='fulfilled' ? r4.value : null;
+  S.raw6 = r6.status==='fulfilled' ? r6.value : null;
+  const iiJ = ii.status==='fulfilled' ? ii.value : null;
+  S.iiIp = (iiJ && iiJ.ip) ? iiJ.ip : null;
+  S.sources['icanhazip'] = S.raw4 ? 'ok' : 'unreachable';
+  if(!isQ) S.sources['ipinfo.io'] = S.sources['ipinfo.io'] || (iiJ ? 'ok' : 'unreachable');
+
+  if(!S.geo){
+    const shown = S.raw4 || '—';
+    $('#bigIp').className='ip err';
+    $('#bigIp').textContent = shown==='—' ? 'resolver unreachable' : shown;
+    $('#statusPill').classList.add('dead');
+    $('#statusTxt').textContent = shown==='—' ? 'OFFLINE' : 'PARTIAL';
+    $('#agree').innerHTML = shown==='—'
+      ? '<span style="color:var(--bad)">No geolocation resolver answered.</span> Raw address probes also failed — check connectivity.'
+      : '<span style="color:var(--warn)">IP resolved ('+esc(shown)+') but geolocation is unavailable — ' +
+        'the map and location fields cannot be filled. Check the source chips below.</span>';
+    renderSources(); renderBrowser(); renderFindings();
+    $('#netList').innerHTML = kv('IP', shown, true) + kv('Source', S.raw4? 'icanhazip / ipify':null);
+    $('#locList').innerHTML = '<div class="kv skel">no resolver answered</div>';
+    $('#timeList').innerHTML = '<div class="kv skel">no resolver answered</div>';
+    return;
+  }
+
+  renderHero(); renderCards(); initMap(); renderBrowser(); renderSources();
+  $('#statusPill').classList.remove('dead');
+  $('#statusTxt').textContent = isQ ? 'LOOKUP' : 'CONNECTED';
+  renderFindings();
+}
+
+function renderSources(){
+  $('#srcRow').innerHTML = Object.keys(S.sources).map(k=>{
+    const st = S.sources[k];
+    const cls = st==='ok' ? 'ok' : (st==='skipped' ? 'skip' : 'no');
+    return '<span class="'+cls+'">'+esc(k)+' · '+esc(st)+'</span>';
+  }).join('') || '<span class="skip">no sources yet</span>';
+}
+
+/* ------------- hero ------------- */
+function renderHero(){
+  const G=S.geo; $('#bigIp').className='ip'; $('#bigIp').textContent=G.ip;
+  const cn=G.connection||{}, tz=G.timezone||{};
+  const t=[];
+  t.push('<span class="tag"><b>'+esc(G.type||'IP')+'</b></span>');
+  if(G.flag) t.push('<span class="tag flag" title="'+esc(G.country||'')+'">'+G.flag+'</span>');
+  else if(G.country_code) t.push('<span class="tag"><b>'+esc(G.country_code)+'</b></span>');
+  if(G.country_code||G.country) t.push('<span class="tag">'+esc(G.country||G.country_code)+'</span>');
+  if(cn.asn) t.push('<span class="tag">AS<b>'+esc(cn.asn)+'</b></span>');
+  if(tz.utc) t.push('<span class="tag">'+esc(tz.utc)+'</span>');
+  let proto='unknown';
+  try{ proto=(performance.getEntriesByType('navigation')[0]||{}).nextHopProtocol||'unknown'; }catch(e){}
+  t.push('<span class="tag">'+esc(String(proto).toUpperCase()||'UNKNOWN')+'</span>');
+  t.push('<span class="tag">src <b>'+esc(G.source)+'</b></span>');
+  $('#tags').innerHTML=t.join('');
+
+  if(S.query){
+    $('#agree').innerHTML='resolved <b>'+esc(G.ip)+'</b> for <b>'+esc(S.query)+'</b> via '+esc(G.source);
+    return;
+  }
+  const seen={};
+  const add=(src,ip)=>{ if(ip&&ipValid(ip)) seen[ip]=(seen[ip]||[]).concat([src]); };
+  add('ipwho/ipinfo', G.ip); add('icanhazip', S.raw4); add('ipinfo.io', iiIp());
+  const ips=Object.keys(seen);
+  if(ips.length===1){
+    $('#agree').innerHTML='<b>✓ '+seen[ips[0]].length+'/3 sources agree</b> — '+esc(ips[0])+
+      ' <span style="color:var(--mut)">'+esc(seen[ips[0]].join(' + '))+'</span>';
+  }else if(ips.length>1){
+    $('#agree').innerHTML='<span style="color:var(--bad)">⚠ sources disagree: </span>'+
+      ips.map(i=>'<b style="color:var(--cy)">'+esc(i)+'</b> <span style="color:var(--mut)">'+
+        esc(seen[i].join('+'))+'</span>').join(' &nbsp;·&nbsp ');
+    addFinding('warn','Resolver disagreement',
+      'Independent egress checks returned '+ips.length+' different addresses — <code>'+
+      ips.map(esc).join('</code>, <code>')+'</code>. Usually a split tunnel, a proxy chain or a rotating address pool.');
+  }else{
+    $('#agree').innerHTML='<span style="color:var(--warn)">cross-check pending…</span>';
+  }
+}
+function iiIp(){ const el=null; return S.iiIp||null; }
+
+/* ------------- cards ------------- */
+function renderCards(){
+  const G=S.geo, tz=G.timezone||{}, cn=G.connection||{};
+  $('#locList').innerHTML =
+    kv('City', (G.flag?G.flag+' ':'')+(G.city||'')) +
+    kvIf('Region', [G.region,G.region_code].filter(Boolean).join(' · ')) +
+    kv('Country', (G.country&&G.country_code&&G.country!==G.country_code)
+        ? G.country+' · '+G.country_code : (G.country||G.country_code)) +
+    kvIf('Continent', G.continent?G.continent+(G.continent_code?' ('+G.continent_code+')':''):null) +
+    kvIf('Postal', G.postal) + kvIf('Hostname', G.hostname) +
+    kvIf('Capital', G.capital) + kvIf('Calling code', G.calling_code?'+'+G.calling_code:null);
+
+  const hosting=/host|data cent|datacent|cloud|vps|transit|coloc|server|bullet|scaleway|digitalocean|hetzner|ovh|yotta/i
+    .test((cn.org||'')+' '+(cn.isp||''));
+  const NTYPE={hosting:'hosting / datacenter',isp:'ISP / access network',
+    business:'business network',mobile:'mobile carrier',university:'education',government:'government'};
+  const ntype = cn.type ? (NTYPE[String(cn.type).toLowerCase()]||cn.type)
+                        : (hosting?'hosting / datacenter':'network operator');
+  $('#netList').innerHTML =
+    kv('IP', G.ip, true) +
+    kv('ASN', cn.asn?'AS'+cn.asn:null, true) +
+    kvIf('Organization', cn.org) + kvIf('ISP', cn.isp) + kvIf('Domain', cn.domain) +
+    kv('Type', ntype, true) +
+    kvIf('Source', G.source, true);
+
+  const bh = -new Date().getTimezoneOffset()/60;
+  $('#timeList').innerHTML =
+    kv('IP timezone', tz.id) + kv('IP offset', tz.utc) +
+    kvIf('Abbr', tz.abbr) +
+    kv('DST', tz.is_dst==null?null:(tz.is_dst?'active':'inactive')) +
+    '<div class="kv"><span>Local time</span><b class="mono"><span id="locClock">—</span></b></div>' +
+    kv('Browser tz', Intl.DateTimeFormat().resolvedOptions().timeZone||'—', true) +
+    kv('Browser offset', fmtOffset(bh), true);
+  tickClock();
+
+  if(G.latitude!=null && G.longitude!=null){
+    $('#coords').textContent='lat '+fmtCoord(G.latitude,'N','S')+' · lon '+fmtCoord(G.longitude,'E','W');
+    $('#mapMeta').textContent=[G.city,G.country_code].filter(Boolean).join(', ')+' · block centroid';
+    $('#mapAcc').textContent=tz.id||'—';
+  }else{
+    $('#coords').textContent='coordinates unavailable from '+G.source;
+    $('#mapMeta').textContent='—'; $('#mapAcc').textContent='—';
+    addFinding('info','No coordinates in resolver payload',
+      '<code>'+esc(G.source)+'</code> returned the address but no latitude/longitude, so the map cannot be plotted. A second resolver was not consulted for coordinates.');
+  }
+}
+const fmtCoord=(v,p,n)=> v==null?'—':Math.abs(v).toFixed(5)+'°'+(v>=0?p:n);
+function tickClock(){
+  const el=document.getElementById('locClock'); if(!el) return;
+  const tz=(S.geo&&S.geo.timezone&&S.geo.timezone.id)||undefined;
+  try{ el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:tz,hour:'2-digit',
+    minute:'2-digit',second:'2-digit',hour12:false}).format(new Date()); }
+  catch(e){ el.textContent=new Date().toLocaleTimeString(); }
+  setTimeout(tickClock,1000);
+}
+function renderBrowser(){
+  let renderer='—';
+  try{ const c=document.createElement('canvas');
+    const gl=c.getContext('webgl')||c.getContext('experimental-webgl');
+    const d=gl&&gl.getExtension('WEBGL_debug_renderer_info');
+    if(d) renderer=gl.getParameter(d.UNMASKED_RENDERER_WEBGL); }catch(e){}
+  const ua=navigator.userAgent;
+  const headless=/HeadlessChrome|PhantomJS|Playwright|puppeteer/i.test(ua);
+  $('#brwList').innerHTML =
+    kv('Platform', navigator.platform||'—', true) +
+    kv('Languages', (navigator.languages||[navigator.language||'']).join(', ')) +
+    kv('Timezone', Intl.DateTimeFormat().resolvedOptions().timeZone||'—', true) +
+    kv('Cores', navigator.hardwareConcurrency) +
+    kv('GPU', renderer) +
+    kv('WebRTC', typeof RTCPeerConnection!=='undefined'?'available':'blocked', true) +
+    kv('Headless UA', headless?'YES — automated':'no', true);
+  if(headless) addFinding('bad','Automated user-agent',
+    'The browser identifies itself as headless/scripted. Every request you make carries that signal.');
+}
+
+/* ------------- map ------------- */
+const LAYERS={
+  sat:{url:'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+       maxZoom:19, attribution:'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'},
+  street:{url:'https://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+       maxZoom:19, attribution:'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, METI'},
+  topo:{url:'https://tile.opentopomap.org/{z}/{x}/{y}.png',
+       maxZoom:17, attribution:'&copy; OpenStreetMap contributors, SRTM | OpenTopoMap (CC-BY-SA)'}
+};
+function setLayer(key){
+  if(!S.map||!S.layers) return;
+  Object.keys(S.layers).forEach(k=>{
+    const L2=S.layers[k];
+    if(k===key){ if(!S.map.hasLayer(L2)) L2.addTo(S.map); }
+    else if(S.map.hasLayer(L2)) S.map.removeLayer(L2);
+  });
+  S.layer=key;
+  const el=$('#map');
+  Object.keys(LAYERS).forEach(k=>el.classList.remove('map-'+k));
+  el.classList.add('map-'+key);
+  document.querySelectorAll('#layerSwitch button').forEach(b=>
+    b.classList.toggle('on', b.dataset.layer===key));
+}
+function initMap(){
+  const G=S.geo;
+  const sw=$('#layerSwitch');
+  if(G.latitude==null||G.longitude==null){
+    if(sw) sw.style.display='none';
+    $('#map').innerHTML='<div style="padding:22px;font-family:var(--mono);font-size:12.5px;color:#7f9aa6;line-height:1.7">'+
+      'no coordinates to plot<br>resolver: <span style="color:#2ff3e0">'+esc(G.source)+'</span></div>';
+    return;
+  }
+  if(!window.L){ $('#map').innerHTML='<div style="padding:22px;font-family:var(--mono);font-size:12.5px;color:#7f9aa6">map library unavailable — offline?</div>'; return; }
+  const lat=G.latitude, lon=G.longitude;
+  const pop='<b>'+esc(G.ip)+'</b><br>'+esc([G.city,G.country_code].filter(Boolean).join(', '))+
+    '<br>'+lat.toFixed(5)+', '+lon.toFixed(5);
+  if(!S.map){
+    S.map=L.map('map',{scrollWheelZoom:false}).setView([lat,lon],13);
+    S.layers={};
+    Object.keys(LAYERS).forEach(k=>{
+      S.layers[k]=L.tileLayer(LAYERS[k].url,{maxZoom:LAYERS[k].maxZoom,
+        attribution:LAYERS[k].attribution, keepBuffer:3});
+    });
+    S.circle=L.circle([lat,lon],{radius:1500,color:'#2ff3e0',weight:1.5,opacity:.7,
+      fillColor:'#2ff3e0',fillOpacity:.1,dashArray:'5 7'}).addTo(S.map);
+    S.marker=L.marker([lat,lon],{icon:L.divIcon({className:'',iconSize:[22,22],iconAnchor:[11,11],
+      html:'<div class="pin"><i></i></div>'})}).addTo(S.map).bindPopup(pop);
+    setLayer(S.layer||'sat');
+  }else{
+    S.marker.setLatLng([lat,lon]).setPopupContent(pop);
+    S.circle.setLatLng([lat,lon]); S.map.setView([lat,lon],13);
+  }
+  setTimeout(()=>S.map&&S.map.invalidateSize(),260);
+}
+
+/* ------------- gauge / findings ------------- */
+function setGauge(num,pct,color,verdict,sub){
+  $('#arcTxt').textContent=num;
+  $('#arc').setAttribute('stroke-dashoffset',String(314-314*Math.max(0,Math.min(100,pct))/100));
+  $('#arc').setAttribute('stroke',color);
+  $('#verdict').textContent=verdict; $('#verdict').style.color=color;
+  $('#scoreSub').innerHTML=sub;
+  $('#scoreLbl').textContent=pct?pct+'/100':'—';
+}
+function recomputeScore(){
+  const geoOk = !!S.geo;
+  const ran = [1,2,3].filter(i=>S.probes[i]).length;
+  const inconclusive = S.findings.filter(f=>/inconclusive/i.test(f.title)).length;
+  if(!geoOk){
+    setGauge('–',0,'var(--mut)','NO GEODATA',
+      'Resolvers did not return a location, so no location-based finding can be evaluated. Probe results below are still valid.');
+    return;
+  }
+  let score=100; const hits=[];
+  for(const f of S.findings){
+    if(f.sev==='bad'){ score-=25; hits.push('−25 · '+f.title); }
+    else if(f.sev==='warn'){ score-=15; hits.push('−15 · '+f.title); }
+  }
+  score=Math.max(0,score);
+  const color=score>=85?'var(--ok)':score>=60?'var(--warn)':'var(--bad)';
+  const verdict=score>=85?'LOW EXPOSURE':score>=60?'WATCH':'HIGH EXPOSURE';
+  let sub;
+  if(ran===0) sub='No probe has run yet — press <b>RUN</b> on any probe to start scoring.';
+  else if(hits.length) sub='Findings applied:<br>'+hits.map(esc).join('<br>');
+  else sub = 'Probes run: '+ran+'/3 · no leak finding observed'+(inconclusive?' ('+inconclusive+' inconclusive, not counted as clean)':'')+'.';
+  setGauge(score,score,color,verdict,sub);
+  $('#scoreMeta').innerHTML =
+    kv('Probes run', ran+'/3'+(inconclusive?' ('+inconclusive+' inconcl.)':''), true)+
+    kv('Geo source', S.geo.source, true)+
+    kv('Findings', String(S.findings.length), true)+
+    kv('Last scan', new Date().toLocaleTimeString(), true);
+}
+const SEVN={bad:'LEAK',warn:'WARNING',info:'INFO',good:'CLEAN'};
+const ORD={bad:0,warn:1,info:2,good:3};
+function renderFindings(){
+  const box=$('#findings');
+  const list=S.findings.slice().sort((a,b)=>ORD[a.sev]-ORD[b.sev]);
+  if(!list.length){ box.innerHTML='<div class="kv skel">Waiting for probes…</div>'; recomputeScore(); return; }
+  box.innerHTML=list.map(f=>'<div class="finding"><div class="sev '+f.sev+'">'+SEVN[f.sev]+
+    '</div><div><div class="ft">'+esc(f.title)+'</div><div class="fb">'+f.body+'</div></div></div>').join('');
+  recomputeScore();
+}
+function setV(id,cls,text){ const e=$('#'+id); e.className='verdict '+(cls||'');
+  e.innerHTML='<i></i><span>'+esc(text)+'</span>'; }
+
+/* ============ PROBE 01 — WebRTC ============ */
+function collectIce(ms){
+  return new Promise(resolve=>{
+    let pc;
+    try{ pc=new RTCPeerConnection({iceServers:[{urls:[
+      'stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302',
+      'stun:stun.cloudflare.com:3478']}]});
+    }catch(e){ return resolve({error:'RTCPeerConnection unavailable'}); }
+    const out=[]; let done=false;
+    const finish=()=>{ if(done) return; done=true; try{pc.close();}catch(e){} resolve({cands:out}); };
+    try{ pc.createDataChannel('nexus'); }catch(e){}
+    pc.onicecandidate=e=>{
+      if(!e.candidate){ finish(); return; }
+      const s=e.candidate.candidate||''; const p=s.split(' ');
+      const ip=p[4], port=p[5], type=p[7]||'';
+      if(ip) out.push({ip,port,type});
+    };
+    try{ pc.createOffer().then(o=>pc.setLocalDescription(o)).catch(()=>finish()); }
+    catch(e){ finish(); }
+    setTimeout(finish, ms||3000);
+  });
+}
+async function runWebRTC(){
+  const btn=$('#run1'); btn.disabled=true; btn.textContent='… RUNNING';
+  setV('v1','','COLLECTING ICE CANDIDATES');
+  $('#d1').textContent='opening peer connection, waiting for STUN…';
+  const res=await collectIce(3200);
+  btn.disabled=false; btn.textContent='▶ RUN WEBRTC TEST';
+  S.probes=S.probes||{}; S.probes[1]=true;
+
+  if(res.error){ setV('v1','warn','PROBE UNAVAILABLE'); $('#d1').textContent=res.error;
+    addFinding('info','WebRTC probe unavailable',esc(res.error)); renderFindings(); return; }
+
+  const base=baselineIp()||'unknown';
+  const pub=[],loc=[],mdns=[];
+  for(const c of res.cands){
+    if(/\.local$/i.test(c.ip)) mdns.push(c);
+    else if(c.type==='host'||isPrivate(c.ip)) loc.push(c);
+    else pub.push(c);
+  }
+  const foreign=pub.filter(c=>c.ip!==base);
+  const L=[];
+  L.push('candidates collected : '+res.cands.length);
+  L.push('server-reflexive    : '+(pub.length?pub.map(c=>c.ip).join(', '):'none'));
+  L.push('host / LAN          : '+(loc.length?loc.map(c=>c.ip).join(', '):(mdns.length?'mDNS-obfuscated (protected)':'none')));
+  if(mdns.length) L.push('mDNS host names     : '+mdns.length+' (privacy mode)');
+  L.push('HTTP IP baseline    : '+base);
+  L.push('source of baseline  : '+(S.geo?S.geo.source:(S.raw4?'icanhazip':'none')));
+
+  if(res.cands.length===0){
+    L.push(''); L.push('ICE gathering produced nothing — WebRTC disabled, or STUN blocked.');
+    setV('v1','warn','PROBE INCONCLUSIVE');
+    $('#d1').innerHTML=esc(L.join('\n'));
+    addFinding('info','WebRTC probe inconclusive',
+      'No ICE candidates were produced. Either WebRTC is disabled here or STUN traffic is blocked — in both cases this path cannot leak, and the probe is <b>not</b> counted as clean.');
+    renderFindings(); return;
+  }
+  if(base==='unknown'){
+    L.push(''); L.push('baseline IP unknown — cannot compare.');
+    setV('v1','warn','PROBE INCONCLUSIVE');
+    $('#d1').innerHTML=esc(L.join('\n'));
+    addFinding('info','WebRTC probe inconclusive',
+      'STUN returned candidates but no HTTP baseline address was available for comparison.');
+    renderFindings(); return;
+  }
+  L.push('');
+  if(foreign.length){
+    L.push('LEAK: STUN sees '+foreign.map(c=>c.ip).join(', ')+' but HTTP left as '+base);
+    setV('v1','bad','LEAK — STUN SEES A DIFFERENT ADDRESS');
+    $('#d1').innerHTML=esc(L.join('\n')).replace(/LEAK:.*/,m=>'<span class="hl">'+esc(m)+'</span>');
+    addFinding('bad','WebRTC address mismatch',
+      'STUN reported <code>'+foreign.map(c=>esc(c.ip)).join('</code>, <code>')+
+      '</code> while your HTTP requests left as <code>'+esc(base)+
+      '</code>. A WebRTC-aware page could watch both paths. Disable WebRTC, or use a browser that only emits mDNS candidates.');
+  }else{
+    L.push('all reflexive candidates match the HTTP IP.');
+    setV('v1','ok','CLEAN — STUN MATCHES HTTP IP');
+    $('#d1').innerHTML=esc(L.join('\n'));
+    addFinding('good','WebRTC consistent with HTTP path',
+      'Every reflexive candidate matches <code>'+esc(base)+'</code>. No second address was exposed on this probe.');
+  }
+  if(loc.length){
+    addFinding('warn','LAN address exposed by WebRTC',
+      'Host candidates revealed local address'+(loc.length>1?'es ':' ')+
+      '<code>'+loc.map(c=>esc(c.ip)).join('</code>, <code>')+'</code> to any page that asks. On hostile Wi-Fi this maps your internal topology.');
+  }else if(mdns.length){
+    addFinding('info','LAN addresses mangled (good)',
+      'Chrome replaced your local addresses with <code>.local</code> mDNS names, so nearby pages cannot read your LAN topology.');
+  }
+  renderFindings();
+}
+
+/* ============ PROBE 02 — dual stack ============ */
+async function runDual(){
+  const btn=$('#run2'); btn.disabled=true; btn.textContent='… RUNNING';
+  setV('v2','','QUERYING BOTH FAMILIES');
+  $('#d2').textContent='asking an IPv4-only and an IPv6-only resolver…';
+  const [a,b]=await Promise.allSettled([fetchRaw(4), fetchRaw(6)]);
+  btn.disabled=false; btn.textContent='▶ RUN DUAL-STACK TEST';
+  S.probes=S.probes||{}; S.probes[2]=true;
+
+  const v4=a.status==='fulfilled'?a.value:null;
+  const v6=b.status==='fulfilled'?b.value:null;
+  const L=['IPv4 : '+(v4||'no route / blocked'),'IPv6 : '+(v6||'not offered by this network')];
+
+  if(!v4&&!v6){
+    setV('v2','warn','PROBE INCONCLUSIVE');
+    $('#d2').innerHTML='<span class="hl">both echo endpoints unreachable</span>';
+    addFinding('info','Dual-stack probe inconclusive','Neither the IPv4 nor the IPv6 echo service could be reached from this page.');
+    renderFindings(); return;
+  }
+  if(!v6){
+    S.raw4=S.raw4||v4;
+    setV('v2','ok','SINGLE-STACK — ONLY IPv4 VISIBLE');
+    L.push(''); L.push('no global IPv6 address exists on this path.');
+    $('#d2').innerHTML=esc(L.join('\n'));
+    addFinding('good','No IPv6 path exposed',
+      'This connection offers no global IPv6 address, so there is no v6 route that could bypass a v4-only tunnel.');
+    renderFindings(); return;
+  }
+
+  S.raw6=v6;
+  let g6=null;
+  try{ g6=fromIpwho(await jget('https://ipwho.is/'+v6,8000)); }catch(e){}
+  if(!g6){ try{ g6=fromIpinfo(await jget('https://ipinfo.io/'+v6+'/json',8000)); }catch(e){} }
+  const v4g=S.geo;
+  if(g6){
+    L.push(''); L.push('IPv6 geolocates : '+[g6.city,g6.country_code].filter(Boolean).join(', '));
+    L.push('IPv6 ASN         : AS'+((g6.connection||{}).asn||'?')+' '+((g6.connection||{}).org||''));
+  }else{
+    L.push(''); L.push('IPv6 geolocation : resolver unavailable');
+  }
+  if(!v4g||!g6){
+    setV('v2','warn','v6 FOUND — GEOLOCATION INCONCLUSIVE');
+    $('#d2').innerHTML=esc(L.join('\n'));
+    addFinding('info','IPv6 present but not geolocatable',
+      'A global IPv6 address <code>'+esc(v6)+'</code> is exposed, but the resolver chain could not return coordinates for it, so no split-tunnel comparison could be made.');
+    renderFindings(); return;
+  }
+  const sameCountry=v4g.country_code===g6.country_code;
+  const sameAsn=(v4g.connection||{}).asn===(g6.connection||{}).asn;
+  L.push('IPv4 vs IPv6 ASN : '+(sameAsn?'identical (AS'+((v4g.connection||{}).asn)+')':'different ASNs'));
+  if(!sameCountry){
+    L.push(''); L.push('SPLIT: '+v4g.country_code+' on v4, '+g6.country_code+' on v6.');
+    setV('v2','bad','LEAK — v4 AND v6 GEOLOCATE DIFFERENTLY');
+    $('#d2').innerHTML=esc(L.join('\n'));
+    addFinding('bad','IPv4 / IPv6 geolocation split',
+      'IPv4 shows <code>'+esc([v4g.city,v4g.country_code].filter(Boolean).join(', '))+
+      '</code> but IPv6 shows <code>'+esc([g6.city,g6.country_code].filter(Boolean).join(', '))+
+      '</code> (AS'+esc(String((g6.connection||{}).asn))+'). Your tunnel likely only carries v4 — the v6 path still points elsewhere. Disable IPv6 or tunnel it too.');
+  }else{
+    setV('v2','ok','CLEAN — BOTH FAMILIES AGREE');
+    $('#d2').innerHTML=esc(L.join('\n'));
+    addFinding('good','Dual-stack paths agree',
+      'IPv4 and IPv6 both resolve to '+esc(v4g.country||'')+' and AS'+esc(String((g6.connection||{}).asn))+
+      ' — no split-tunnel signature.');
+  }
+  renderFindings();
+}
+
+/* ============ PROBE 03 — locale ============ */
+function runLocale(){
+  const btn=$('#run3'); btn.disabled=true;
+  setV('v3','','COMPARING LOCALE WITH IP');
+  setTimeout(()=>{
+    btn.disabled=false;
+    S.probes=S.probes||{}; S.probes[3]=true;
+    const G=S.geo, tz=(G&&G.timezone)||{};
+    const bTz=Intl.DateTimeFormat().resolvedOptions().timeZone||'unknown';
+    const bLang=(navigator.languages||[navigator.language||'']).join(', ');
+    const bOff=-new Date().getTimezoneOffset()/60;
+    const ipOff = (tz.offset!=null) ? tz.offset
+                : (tz.id ? offsetHours(tz.id) : null);
+    const utcNow = new Date().toLocaleString('en-GB',{timeZone:'UTC'});
+    const ipNow  = tz.id ? new Date().toLocaleString('en-GB',{timeZone:tz.id}) : null;
+    const L=['browser timezone : '+bTz,
+             'IP timezone      : '+(tz.id||'unknown'),
+             'browser offset   : '+fmtOffset(bOff),
+             'IP offset        : '+(tz.utc||(ipOff!=null?fmtOffset(ipOff):'unknown')),
+             'browser locale   : '+bLang,
+             'IP locale hint   : '+[G&&G.calling_code?'+'+G.calling_code:null, G&&G.country_code].filter(Boolean).join(' ')];
+
+    if(!G||!tz.id){
+      L.push(''); L.push('resolver returned no timezone — nothing to compare against.');
+      setV('v3','warn','PROBE INCONCLUSIVE');
+      $('#d3').innerHTML=esc(L.join('\n'));
+      addFinding('info','Locale probe inconclusive',
+        'The geolocation resolver did not return a timezone for your address, so browser and IP cannot be compared. This is <b>not</b> evidence of agreement.');
+      renderFindings(); return;
+    }
+    L.push(''); L.push('IP local time    : '+ipNow+'  (browser UTC '+utcNow+')');
+    const tzMismatch = bTz!=='unknown' && bTz!==tz.id;
+    const offMismatch = ipOff!=null && Math.abs(bOff-ipOff)>=1;
+    if(tzMismatch&&offMismatch){
+      setV('v3','bad','LEAK — BROWSER CLOCK IS NOT AT THE IP LOCATION');
+      $('#d3').innerHTML=esc(L.join('\n'));
+      addFinding('bad','Timezone mismatch',
+        'Your IP claims <code>'+esc(tz.id)+'</code> ('+esc(fmtOffset(ipOff))+
+        ') but the browser reports <code>'+esc(bTz)+'</code> ('+esc(fmtOffset(bOff))+
+        '). Any site can read both and know your IP location is not where your clock says you are.');
+    }else if(tzMismatch&&!offMismatch){
+      setV('v3','warn','TIMEZONE NAME DIFFERS, OFFSET MATCHES');
+      $('#d3').innerHTML=esc(L.join('\n'));
+      addFinding('warn','Timezone label mismatch',
+        'Browser says <code>'+esc(bTz)+'</code>, IP says <code>'+esc(tz.id)+
+        '</code>. Offsets agree, so this is most likely a neighbouring zone or an IANA alias rather than a real leak.');
+    }else{
+      setV('v3','ok','CLEAN — BROWSER AND IP AGREE');
+      $('#d3').innerHTML=esc(L.join('\n'));
+      addFinding('good','Locale consistent with IP geolocation',
+        'Browser timezone <code>'+esc(bTz)+'</code> matches the timezone registered for <code>'+esc(G.ip)+'</code>.');
+    }
+    if(G.country_code){
+      let reg=null; try{ reg=new Intl.Locale(bLang.split(',')[0]||'').region; }catch(e){}
+      if(reg&&reg!==G.country_code){
+        addFinding('info','UI language differs from IP country',
+          'Browser language region is <code>'+esc(reg)+'</code> while the IP is in <code>'+esc(G.country_code)+
+          '</code>. Harmless alone, but combined with a timezone mismatch it narrows you down.');
+      }
+    }
+    renderFindings();
+  }, 400);
+}
+
+/* ------------- wiring ------------- */
+S.probes={1:false,2:false,3:false};
+$('#run1').addEventListener('click',runWebRTC);
+$('#run2').addEventListener('click',runDual);
+$('#run3').addEventListener('click',runLocale);
+$('#btnCopyIp').addEventListener('click',()=>{ const ip=baselineIp(); if(ip) copy(ip,'ip'); else toast('nothing to copy yet'); });
+$('#btnCopyLink').addEventListener('click',()=>copy(location.origin+location.pathname,'link'));
+$('#btnWhois').addEventListener('click',()=>{ const ip=baselineIp();
+  if(ip) window.open('https://who.is/lookup?query='+encodeURIComponent(ip),'_blank'); else toast('nothing to look up yet'); });
+$('#btnCoords').addEventListener('click',()=>{ const g=S.geo;
+  if(g&&g.latitude!=null) copy(g.latitude.toFixed(5)+', '+g.longitude.toFixed(5),'coords');
+  else toast('no coordinates'); });
+$('#btnMaps').addEventListener('click',()=>{ const g=S.geo;
+  if(g&&g.latitude!=null) window.open('https://www.openstreetmap.org/?mlat='+g.latitude+
+    '&mlon='+g.longitude+'#map=14/'+g.latitude+'/'+g.longitude,'_blank');
+  else toast('no coordinates'); });
+$('#btnRescan').addEventListener('click',()=>scan(null));
+document.querySelectorAll('#layerSwitch button').forEach(b=>
+  b.addEventListener('click',()=>setLayer(b.dataset.layer)));
+$('#btnLookup').addEventListener('click',doLookup);
+$('#q').addEventListener('keydown',e=>{ if(e.key==='Enter') doLookup(); });
+function doLookup(){
+  const v=$('#q').value.trim();
+  if(!v){ scan(null); return; }
+  if(!ipValid(v)&&!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(v)){ toast('enter a valid IP or hostname'); return; }
+  scan(v);
+}
+
+/* ------------- boot ------------- */
+const qp=new URLSearchParams(location.search).get('ip');
+if(qp&&ipValid(qp)) $('#q').value=qp;
+scan(qp&&ipValid(qp)?qp:null);
+window.addEventListener('load',()=>{
+  setTimeout(runWebRTC,700);
+  setTimeout(runDual,1300);
+  setTimeout(runLocale,1900);
+});
+</script>
+</body>
+</html>
