@@ -182,6 +182,51 @@ details.method[open] summary:after{content:"–"}
 .methodbody h5:first-child{margin-top:0}
 .methodbody code{font-family:var(--mono);font-size:12.5px;color:var(--cy);
   background:rgba(47,243,224,.08);padding:1px 5px;border-radius:4px}
+/* ---- X / Twitter suitability ---- */
+.xcard{background:var(--panel);border:1px solid rgba(255,77,109,.3);border-radius:16px;
+  padding:18px 19px 20px;margin-bottom:16px;backdrop-filter:blur(9px);position:relative;overflow:hidden;
+  box-shadow:0 16px 44px rgba(0,0,0,.42)}
+.xcard:before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,#ff4d6d,var(--cy),transparent);opacity:.9}
+.xhead{display:flex;justify-content:space-between;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:15px}
+.xhead h3{margin:0 0 6px}
+.xq{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.xq input{font-family:var(--mono);font-size:12.5px;padding:9px 12px;border-radius:9px;
+  background:rgba(0,0,0,.42);border:1px solid var(--line);color:var(--ink);width:210px;outline:none}
+.xq input:focus{border-color:var(--cy);box-shadow:0 0 0 3px rgba(47,243,224,.14)}
+.xgrid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.xverdict{grid-column:span 4;border:1px dashed rgba(255,255,255,.16);border-radius:12px;
+  padding:18px;display:flex;flex-direction:column;justify-content:center;gap:7px;
+  background:linear-gradient(160deg,rgba(0,0,0,.34),rgba(0,0,0,.12))}
+.xnum{font-family:var(--mono);font-size:54px;font-weight:700;line-height:1}
+.xnum small{font-size:19px;color:var(--mut);font-weight:400}
+.xlabel{font-family:var(--mono);font-size:13px;letter-spacing:.14em}
+.xsub{font-size:12.5px;color:var(--mut);line-height:1.65}
+.xhits{font-family:var(--mono);font-size:11px;color:var(--bad);line-height:1.7}
+.xsigs{grid-column:span 8;display:flex;flex-direction:column;gap:8px}
+.xrow{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;
+  background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:10px 13px}
+.xrow .lab{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--cy-dim);
+  text-transform:uppercase}
+.xrow .val{font-size:13px;margin-top:4px;word-break:break-word;line-height:1.5}
+.xrow .val b{color:var(--cy);font-family:var(--mono);font-size:12.5px;font-weight:400}
+.chip{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;padding:5px 9px;border-radius:6px;
+  white-space:nowrap;border:1px solid}
+.chip.good{background:rgba(57,255,136,.1);color:var(--ok);border-color:rgba(57,255,136,.35)}
+.chip.warn{background:rgba(255,176,32,.1);color:var(--warn);border-color:rgba(255,176,32,.4)}
+.chip.bad{background:rgba(255,77,109,.1);color:var(--bad);border-color:rgba(255,77,109,.45)}
+.chip.na{background:rgba(255,255,255,.05);color:var(--mut);border-color:rgba(255,255,255,.14)}
+.xrules{margin-top:15px;padding-top:13px;border-top:1px dashed rgba(255,255,255,.1);
+  font-size:12.5px;color:#a6c9d2;line-height:1.8}
+.xrules h6{margin:0 0 6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;
+  color:var(--cy-dim);text-transform:uppercase}
+.xrules ol{margin:0;padding-left:19px}
+.xrules li{margin:3px 0}
+.xrules code{font-family:var(--mono);font-size:12px;color:var(--cy);background:rgba(47,243,224,.08);
+  padding:1px 5px;border-radius:4px}
+.xdisc{margin-top:12px;font-family:var(--mono);font-size:11.5px;color:var(--mut);line-height:1.75;
+  background:rgba(255,77,109,.06);border:1px solid rgba(255,77,109,.24);border-radius:9px;padding:10px 12px}
+@media(max-width:900px){.xverdict,.xsigs{grid-column:span 12}.xq input{width:100%}}
 footer{border-top:1px solid rgba(255,255,255,.07);padding-top:18px;
   font-family:var(--mono);font-size:11.5px;color:var(--mut);line-height:1.8;
   display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
@@ -326,6 +371,53 @@ footer{border-top:1px solid rgba(255,255,255,.07);padding-top:18px;
 <div class="findings">
   <h3>Findings</h3>
   <div id="findings"><div class="kv skel">Waiting for probes…</div></div>
+</div>
+
+<div class="xcard">
+  <div class="xhead">
+    <div>
+      <div class="kicker" style="margin-bottom:8px">X / Twitter · is this IP safe to run an account from?</div>
+      <h3 style="font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;color:var(--cy-dim);text-transform:uppercase">
+        Account-safety signals <em style="font-style:normal;color:var(--mut);letter-spacing:.1em">auto-runs on your IP</em></h3>
+    </div>
+    <div class="xq">
+      <input id="xq" placeholder="IP to judge …" spellcheck="false" value="">
+      <button id="btnXrun">▶ CHECK IP</button>
+    </div>
+  </div>
+  <div class="xgrid">
+    <div class="xverdict">
+      <div class="xnum" id="xNum">—<small>/100</small></div>
+      <div class="xlabel" id="xLabel" style="color:var(--mut)">ANALYZING</div>
+      <div class="xsub" id="xSub">Running network-class, rDNS, blacklist and consistency checks…</div>
+      <div class="xhits" id="xHits"></div>
+    </div>
+    <div class="xsigs" id="xSigs">
+      <div class="xrow"><div><div class="lab">signals</div><div class="val skel">waiting for probes…</div></div>
+        <span class="chip na">PENDING</span></div>
+    </div>
+  </div>
+  <div class="xrules">
+    <h6>What actually decides it for X</h6>
+    <ol>
+      <li><b>One fixed IP per account.</b> Rotating addresses between logins is the single strongest
+          automation signal you control — the whole point of the fixed IP you are buying.</li>
+      <li><b>Datacenter vs residential.</b> VPS/hosting addresses hit phone-verification and login-challenge
+          flows far more often than residential or mobile ones; a shared datacenter range also inherits
+          whatever previous tenants did with it.</li>
+      <li><b>Reputation.</b> An address on a mail blacklist or an open proxy list is treated as hostile
+          traffic everywhere, including X.</li>
+      <li><b>Consistency.</b> Keep country, timezone, language and device stable across sessions —
+          a Canadian IP with a UTC clock and an <code>en-US</code> locale is a contradiction every
+          platform can read.</li>
+      <li><b>Warm-up.</b> A brand-new IP plus a brand-new account plus bulk actions on day one is the
+          pattern that triggers review; do nothing heavy for the first days.</li>
+    </ol>
+    <div class="xdisc">Honest limit: X publishes no IP-risk API, so nothing here can tell you what X's
+      internal risk engine will decide. This panel aggregates public, keyless evidence — network class,
+      reverse DNS, DNS blacklists, anycast and geo/timezone consistency — which is the same class of
+      signal every platform's anti-automation layer reads. Treat it as a well-founded estimate, not a verdict.</div>
+  </div>
 </div>
 
 <details class="method">
@@ -495,21 +587,21 @@ function fromIpinfo(j){
     connection:{asn:asn, org:org, isp:org, domain:null},
     timezone:{ id:j.timezone||null, utc:fmtOffset(oh), abbr:null, is_dst:null, offset:oh} };
 }
-async function resolveGeo(q){
-  S.sources = {};
+async function resolveGeo(q, sink){
+  const SRC = sink || S.sources;
   const target = q || '';
   // 1) primary — with one retry, resolvers rate-limit aggressively
   for(let i=0;i<2;i++){
     try{ const g = fromIpwho(await jget('https://ipwho.is/'+target, 9000));
-      if(g){ S.sources['ipwho.is']='ok'; return g; } }
-    catch(e){ S.sources['ipwho.is'] = (e.status===429)?'rate-limited':'error '+(e.status||'');
+      if(g){ SRC['ipwho.is']='ok'; return g; } }
+    catch(e){ SRC['ipwho.is'] = (e.status===429)?'rate-limited':'error '+(e.status||'');
       if(i===0){ await new Promise(r=>setTimeout(r,600)); } }
   }
   // 2) fallback
   const fb = target ? 'https://ipinfo.io/'+target+'/json' : 'https://ipinfo.io/json';
   try{ const j = await jget(fb, 9000); const g = fromIpinfo(j);
-    if(g){ S.sources['ipinfo.io']='ok'; return g; } S.sources['ipinfo.io']='bad payload'; }
-  catch(e){ S.sources['ipinfo.io']='error '+(e.status||''); }
+    if(g){ SRC['ipinfo.io']='ok'; return g; } SRC['ipinfo.io']='bad payload'; }
+  catch(e){ SRC['ipinfo.io']='error '+(e.status||''); }
   return null;
 }
 async function fetchRaw(v){
@@ -528,7 +620,7 @@ async function fetchRaw(v){
 
 /* ------------- scan ------------- */
 async function scan(q){
-  S.findings = []; S.query = q || null; S.scored = false;
+  S.findings = []; S.query = q || null; S.scored = false; S.sources = {};
   $('#statusPill').classList.remove('dead');
   $('#statusTxt').textContent = 'SCANNING';
   $('#bigIp').className = 'ip';
@@ -572,6 +664,7 @@ async function scan(q){
       : '<span style="color:var(--warn)">IP resolved ('+esc(shown)+') but geolocation is unavailable — ' +
         'the map and location fields cannot be filled. Check the source chips below.</span>';
     renderSources(); renderBrowser(); renderFindings();
+    queueXCheck(S.raw4||'');
     $('#netList').innerHTML = kv('IP', shown, true) + kv('Source', S.raw4? 'icanhazip / ipify':null);
     $('#locList').innerHTML = '<div class="kv skel">no resolver answered</div>';
     $('#timeList').innerHTML = '<div class="kv skel">no resolver answered</div>';
@@ -582,6 +675,7 @@ async function scan(q){
   $('#statusPill').classList.remove('dead');
   $('#statusTxt').textContent = isQ ? 'LOOKUP' : 'CONNECTED';
   renderFindings();
+  queueXCheck(S.query||'');
 }
 
 function renderSources(){
@@ -1039,6 +1133,197 @@ function runLocale(){
   }, 400);
 }
 
+/* ============ X / TWITTER IP SUITABILITY ============ */
+const HOSTKW=/\b(hosting|data\s?cent(?:er|re)?|vps|cloud|dedicat(?:ed|ion)?|colo(?:cat(?:ion)?)?|servers?|bullet|scaleway|digitalocean|hetzner|ovh|linode|akamai|vultr|contabo|selectel|time\s?web|amazon|aws|microsoft|azure|google|oracle|alibaba|yotta|amazee|hostinger|bluehost|godaddy|leaseweb|choopa|rackspace|softlayer|ionos|quadranet|frantech|beget|zomro|packet|ovhcloud)/i;
+const RD_DC=/\b(vps|srv|server|hosting|host|node|cloud|colo|dedi|dcat|cluster|infra|datacenter|ipmi|ec2|static)\b/i;
+const RD_RES=/\b(dynamic|pool|cust|customer|cpe|broadband|cable|dial|adsl|ftth|fiber|fibre|residential|dhcp|wireless|mobile|gprs|umts|hsdpa|lte|wimax)\b/i;
+const BLS=[{k:'SpamCop',z:'bl.spamcop.net',w:-12},
+           {k:'Barracuda',z:'b.barracudacentral.org',w:-12},
+           {k:'UCEPROTECT',z:'dnsbl-1.uceprotect.net',w:-5}];
+const revIp = ip => String(ip).split('.').reverse().join('.');
+async function doh(name, typ){
+  try{
+    const j = await jget('https://dns.google/resolve?name='+encodeURIComponent(name)+'&type='+(typ||'A'), 9000);
+    return {ok:true, status:j.Status, ans:(j.Answer||[]).map(x=>({type:x.type, data:x.data}))};
+  }catch(e){ return {ok:false, err:String(e.message||e)}; }
+}
+async function getPtr(ip){
+  const r = await doh(revIp(ip)+'.in-addr.arpa', 'PTR');
+  if(!r.ok) return {err:true, host:null};
+  const a = r.ans.find(x=>x.type===12);
+  return {err:false, host: a ? String(a.data).replace(/\.$/,'') : null, status:r.status};
+}
+async function getBl(ip){
+  return Promise.all(BLS.map(async b=>{
+    const r = await doh(revIp(ip)+'.'+b.z, 'A');
+    const a = r.ok ? r.ans.filter(x=>x.type===1).map(x=>x.data) : [];
+    return {name:b.k, zone:b.z, w:b.w, err:!r.ok,
+            listed: !!(r.ok && r.status===0 && a.length), code:a[0]||null};
+  }));
+}
+async function getPrivacy(ip){
+  try{
+    const j = await jget('https://ipapi.is/json/'+encodeURIComponent(ip), 8000);
+    if(!j || j.error) return {ok:false, err:(j&&j.error)||'no data'};
+    return {ok:true, vpn:!!j.is_vpn, proxy:!!j.is_proxy, tor:!!j.is_tor,
+            dc:!!j.is_datacenter, abuser:!!j.is_abuser, crawler:!!j.is_crawler,
+            type:(j.company&&j.company.type)||j.type||null};
+  }catch(e){ return {ok:false, err:String(e.message||e)}; }
+}
+async function getIpinfo(ip){
+  try{
+    const j = await jget('https://ipinfo.io/'+encodeURIComponent(ip)+'/json', 8000);
+    if(!j || j.error) return {ok:false};
+    let asn=null, org=null;
+    const mo=String(j.org||'').match(/^\s*(AS\d+)\s*(.*)$/);
+    if(mo){ asn=+mo[1].slice(2); org=mo[2]||null; } else org=j.org||null;
+    return {ok:true, hostname:j.hostname||null, anycast:j.anycast===true,
+            asn, org, country:j.country||null, city:j.city||null};
+  }catch(e){ return {ok:false}; }
+}
+let xBusy=false;
+function queueXCheck(ip){ if(xBusy) return; setTimeout(()=>runX(ip), 900); }
+async function runX(target){
+  if(xBusy) return;
+  let ip=(target||'').trim() || ($('#xq').value||'').trim() || baselineIp();
+  if(!ip){ toast('no IP yet — wait for the scan'); return; }
+  if(!ipValid(ip)){ toast('enter a valid IP'); return; }
+  if(isV6(ip)){ toast('IPv4 only for the blacklist check'); return; }
+  const btn=$('#btnXrun'); xBusy=true; btn.disabled=true; btn.textContent='… CHECKING';
+  $('#xNum').innerHTML='—<small>/100</small>';
+  $('#xLabel').textContent='ANALYZING'; $('#xLabel').style.color='var(--mut)';
+  $('#xSub').textContent='querying reverse DNS, blacklists, network class and consistency…';
+  $('#xHits').textContent='';
+  $('#xSigs').innerHTML='<div class="xrow"><div><div class="lab">signals</div>'+
+    '<div class="val skel">querying public sources…</div></div><span class="chip na">…</span></div>';
+  const own=baselineIp(), isOwn=(ip===own);
+  const sink={};
+  try{
+    const [geo, ptr, bls, priv, ii] = await Promise.all([
+      (isOwn && S.geo) ? Promise.resolve(S.geo) : resolveGeo(ip, sink),
+      getPtr(ip), getBl(ip), getPrivacy(ip), getIpinfo(ip)
+    ]);
+    const rows=[]; let score=100; const hits=[];
+    const add=(lab, html, cls, delta, why)=>{
+      rows.push({lab, html, cls});
+      if(delta){ score+=delta; hits.push((delta>0?'+':'')+delta+' · '+why); }
+    };
+    const cn = geo ? (geo.connection||{}) : {};
+    const orgName = (ii.ok && ii.org) || cn.org || cn.isp || orgNameFallback(geo) || '';
+    const asnN = (ii.ok && ii.asn) || cn.asn || null;
+    const rHost = ptr.err ? null : ptr.host;
+    const host = rHost || (ii.ok && ii.hostname) || null;
+
+    /* 1 — network class */
+    let cls='unconfirmed';
+    if(HOSTKW.test(orgName)) cls='hosting';
+    else if(host && RD_RES.test(host)) cls='residential';
+    else if(host && RD_DC.test(host)) cls='hosting';
+    if(cls==='hosting') add('network class',
+        '<b>'+esc(orgName||'datacenter range')+'</b>'+(asnN?' · AS'+asnN:'')+
+        '<br>datacenter / hosting address — usable, but X treats it as non-residential', 'bad', -25, 'datacenter network');
+    else if(cls==='residential') add('network class',
+        '<b>'+esc(orgName||'access network')+'</b>'+(asnN?' · AS'+asnN:'')+
+        '<br>residential-looking line — the safest category', 'good', 0, '');
+    else add('network class',
+        '<b>'+esc(orgName||'unknown operator')+'</b>'+(asnN?' · AS'+asnN:'')+
+        '<br>could not confirm class from ASN or rDNS', 'warn', -8, 'network class unconfirmed');
+
+    /* 2 — reverse DNS */
+    if(ptr.err) add('reverse DNS (PTR)', 'DNS resolver unreachable — check skipped', 'na', 0, '');
+    else if(host) add('reverse DNS (PTR)',
+        '<b>'+esc(host)+'</b><br>'+(rHost?'published by the network':'published by ipinfo.io'),
+        RD_DC.test(host)?'bad':'good',
+        RD_DC.test(host)&&cls!=='hosting' ? -10 : 0, 'datacenter-looking rDNS');
+    else add('reverse DNS (PTR)', 'no PTR record and no hostname — common on pooled ranges', 'warn', -5, 'no rDNS');
+
+    /* 3 — privacy / proxy flags */
+    if(priv.ok){
+      const flags=[];
+      if(priv.tor) flags.push('TOR'); if(priv.vpn) flags.push('VPN');
+      if(priv.proxy) flags.push('PROXY'); if(priv.crawler) flags.push('CRAWLER');
+      if(priv.abuser) flags.push('ABUSER');
+      if(priv.tor||priv.vpn||priv.proxy){
+        const d = priv.tor?-35:(priv.vpn?-30:-25);
+        add('proxy / VPN flags', '<b>'+flags.join(' · ')+'</b><br>public lists already flag this address', 'bad', d, 'flagged as '+(priv.tor?'tor':(priv.vpn?'vpn':'proxy')));
+      }else if(priv.abuser){
+        add('proxy / VPN flags', '<b>ABUSER</b><br>seen acting maliciously, but not a proxy', 'bad', -20, 'abuser reputation');
+      }else if(priv.dc && cls!=='hosting'){
+        add('proxy / VPN flags', 'no VPN/proxy/TOR flag — but <b>DATACENTER</b> is confirmed', 'warn', -10, 'datacenter flag');
+      }else if(flags.length){
+        add('proxy / VPN flags', '<b>'+flags.join(' · ')+'</b>', 'warn', -8, flags[0].toLowerCase()+' flag');
+      }else{
+        add('proxy / VPN flags', 'no VPN / proxy / TOR flag recorded', 'good', 0, '');
+      }
+    }else{
+      const perr = /fetch|network|failed/i.test(priv.err||'') ? 'service down' : esc(priv.err||'unavailable');
+      add('proxy / VPN flags', 'ipapi.is unavailable ('+perr+') — check skipped', 'na', 0, '');
+    }
+
+    /* 4 — blacklists */
+    const listed = bls.filter(b=>b.listed);
+    const errs = bls.filter(b=>b.err);
+    if(listed.length){
+      add('IP reputation (blacklists)',
+        '<b>'+listed.map(b=>esc(b.name)+' ('+esc(b.code)+')').join(', ')+'</b><br>'+
+        'listed — addresses with mail/abuse history are rate-limited everywhere', 'bad',
+        listed.reduce((s,b)=>s+b.w,0), 'blacklisted on '+listed.length+' list'+(listed.length>1?'s':''));
+    }else if(errs.length===bls.length){
+      add('IP reputation (blacklists)', 'all blacklist zones unreachable', 'na', 0, '');
+    }else{
+      add('IP reputation (blacklists)',
+        'clean on '+bls.filter(b=>!b.err).length+'/'+bls.length+' zones · '+esc(bls.map(b=>b.name).join(' · '))+
+        (errs.length?' ('+errs.length+' unreachable)':''), 'good', 0, '');
+    }
+
+    /* 5 — anycast */
+    if(ii.ok && ii.anycast) add('anycast',
+      'address answers from many locations — not a fixed home for one account', 'warn', -15, 'anycast address');
+    else if(ii.ok) add('anycast', 'not anycast — traffic resolves to one location', 'good', 0, '');
+    else add('anycast', 'ipinfo.io unreachable — not checked', 'na', 0, '');
+
+    /* 6 — geo / clock consistency */
+    const tz = geo && geo.timezone ? geo.timezone.id : null;
+    const bTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown';
+    if(!isOwn){
+      add('location &amp; clock consistency',
+        esc([geo&&geo.city, geo&&geo.country_code].filter(Boolean).join(', ')||'unknown')+
+        ' · timezone <b>'+esc(tz||'unknown')+'</b><br>external IP — run the consistency check on your own address',
+        'na', 0, '');
+    }else if(!tz){
+      add('location &amp; clock consistency', 'resolver returned no timezone — not checked', 'na', 0, '');
+    }else if(tz===bTz){
+      add('location &amp; clock consistency',
+        'browser clock is at the IP (<b>'+esc(tz)+'</b>) · '+esc([geo&&geo.city, geo&&geo.country_code].filter(Boolean).join(', ')), 'good', 0, '');
+    }else{
+      add('location &amp; clock consistency',
+        'IP says <b>'+esc(tz)+'</b>, browser says <b>'+esc(bTz)+'</b> — a mismatch every platform can read',
+        'bad', -15, 'timezone mismatch');
+    }
+
+    /* verdict */
+    score = Math.max(0, Math.min(100, score));
+    const L = score>=85 ? ['GOOD FOR X','var(--ok)','stable, clean and consistent — nothing in the public signals should trip a challenge']
+            : score>=65 ? ['ACCEPTABLE — MONITOR','var(--warn)','usable, but one or two signals put you closer to challenge/verification flows than a clean residential line would']
+            : score>=45 ? ['RISKY — EXPECT CHALLENGES','var(--bad)','X commonly asks datacenter or flagged addresses for login verification and limits what they do']
+            : ['NOT RECOMMENDED','var(--bad)','this address is the kind of source platforms block outright; do not build an account on it'];
+    $('#xNum').innerHTML=score+'<small>/100</small>';
+    $('#xNum').style.color=L[1];
+    $('#xLabel').textContent=L[0]; $('#xLabel').style.color=L[1];
+    $('#xSub').textContent=L[2];
+    $('#xHits').textContent=hits.length ? hits.join('   ') : '';
+    $('#xSigs').innerHTML=rows.map(r=>'<div class="xrow"><div><div class="lab">'+r.lab+
+      '</div><div class="val">'+r.html+'</div></div><span class="chip '+r.cls+'">'+
+      ({good:'CLEAN',warn:'WATCH',bad:'RISK',na:'N/A'}[r.cls]||'—')+'</span></div>').join('');
+  }catch(e){
+    $('#xLabel').textContent='CHECK FAILED'; $('#xLabel').style.color='var(--bad)';
+    $('#xSub').textContent=String(e.message||e);
+  }finally{
+    xBusy=false; btn.disabled=false; btn.textContent='▶ CHECK IP';
+  }
+}
+function orgNameFallback(geo){ return geo && geo.connection ? (geo.connection.org||geo.connection.isp||'') : ''; }
+
 /* ------------- wiring ------------- */
 S.probes={1:false,2:false,3:false};
 $('#run1').addEventListener('click',runWebRTC);
@@ -1058,6 +1343,8 @@ $('#btnMaps').addEventListener('click',()=>{ const g=S.geo;
 $('#btnRescan').addEventListener('click',()=>scan(null));
 document.querySelectorAll('#layerSwitch button').forEach(b=>
   b.addEventListener('click',()=>setLayer(b.dataset.layer)));
+$('#btnXrun').addEventListener('click',()=>runX(($('#xq').value||'').trim()));
+$('#xq').addEventListener('keydown',e=>{ if(e.key==='Enter') runX(($('#xq').value||'').trim()); });
 $('#btnLookup').addEventListener('click',doLookup);
 $('#q').addEventListener('keydown',e=>{ if(e.key==='Enter') doLookup(); });
 function doLookup(){

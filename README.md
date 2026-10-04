@@ -25,6 +25,25 @@ on a live satellite/street/topo map, and runs three independent leak probes.
 3. **Timezone & locale** — `Intl` timezone, UTC offset and language region compared
    against the timezone registered for your IP.
 
+## X / Twitter account-safety panel
+
+Scores any IPv4 0–100 for how suitable it looks as a **fixed** address to run an X
+account from. It auto-runs on your own IP and accepts any other address in its input.
+
+| Signal | Source | Cost |
+|---|---|---|
+| Network class (datacenter / residential) | ASN org name + rDNS keyword match | −25 / −8 |
+| Reverse DNS (PTR) | `dns.google` DNS-over-HTTPS | −10 / −5 |
+| Proxy / VPN / TOR / abuser flags | `ipapi.is` | −20 … −35 |
+| IP reputation | SpamCop, Barracuda, UCEPROTECT DNSBLs via DoH | −5 … −24 |
+| Anycast | `ipinfo.io` | −15 |
+| Geo + clock consistency | resolver timezone vs `Intl` | −15 |
+
+Scoring stops at 85 = **GOOD FOR X**, 65 = **ACCEPTABLE**, 45 = **RISKY**, below = **NOT
+RECOMMENDED**. Signals that could not be checked are shown as `N/A` and never counted as
+clean. X publishes no IP-risk API — the panel says so on the page and reports evidence
+rather than a verdict it cannot have.
+
 ## Design notes
 
 - **No backend, no keys, no logging.** Every call is made by your browser straight to
