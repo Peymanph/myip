@@ -1285,6 +1285,10 @@ async function runX(target){
     /* 6 — geo / clock consistency */
     const tz = geo && geo.timezone ? geo.timezone.id : null;
     const bTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown';
+    const devLang = (navigator.languages&&navigator.languages[0])||navigator.language||'unknown';
+    const wantRegion = geo && geo.country_code ? geo.country_code : null;
+    const langRegion = (()=>{ try{ return new Intl.Locale(devLang).region||null; }catch(e){ return null; } })();
+    const langBad = !!(wantRegion && langRegion && langRegion!==wantRegion);
     if(!isOwn){
       add('location &amp; clock consistency',
         esc([geo&&geo.city, geo&&geo.country_code].filter(Boolean).join(', ')||'unknown')+
@@ -1296,9 +1300,20 @@ async function runX(target){
       add('location &amp; clock consistency',
         'browser clock is at the IP (<b>'+esc(tz)+'</b>) · '+esc([geo&&geo.city, geo&&geo.country_code].filter(Boolean).join(', ')), 'good', 0, '');
     }else{
+      const ipOff = offsetHours(tz), devOff = -new Date().getTimezoneOffset()/60;
+      const dh = (ipOff!=null && isFinite(ipOff)) ? Math.round(Math.abs(ipOff-devOff)*10)/10 : null;
       add('location &amp; clock consistency',
-        'IP says <b>'+esc(tz)+'</b>, browser says <b>'+esc(bTz)+'</b> — a mismatch every platform can read',
+        'IP says <b>'+esc(tz)+'</b> ('+esc(fmtOffset(ipOff))+'), device says <b>'+esc(bTz)+'</b> ('+esc(fmtOffset(devOff))+')'+
+        (dh!=null?' — off by <b>'+dh+' h</b>':'')+
+        '<br><span style="color:var(--cy)">→ set this device to <b>'+esc(tz)+'</b></span>'+(langBad?' and UI language region to <b>'+esc(wantRegion)+'</b>':''),
         'bad', -15, 'timezone mismatch');
+    }
+    if(isOwn && wantRegion){
+      if(langBad) add('language region',
+        'device <code>'+esc(devLang)+'</code> → region <b>'+esc(langRegion)+'</b>, IP is <b>'+esc(wantRegion)+'</b><br>'+
+        '<span style="color:var(--cy)">→ switch the UI language region to '+esc(wantRegion)+'</span>', 'warn', -5, 'language/country mismatch');
+      else add('language region',
+        'device <code>'+esc(devLang)+'</code>'+(langRegion?' → region <b>'+esc(langRegion)+'</b>':'')+' · consistent with the IP country', 'good', 0, '');
     }
 
     /* verdict */
