@@ -1312,8 +1312,10 @@ async function runX(target){
       if(langBad) add('language region',
         'device <code>'+esc(devLang)+'</code> → region <b>'+esc(langRegion)+'</b>, IP is <b>'+esc(wantRegion)+'</b><br>'+
         '<span style="color:var(--cy)">→ switch the UI language region to '+esc(wantRegion)+'</span>', 'warn', -5, 'language/country mismatch');
+      else if(langRegion) add('language region',
+        'device <code>'+esc(devLang)+'</code> → region <b>'+esc(langRegion)+'</b> · consistent with the IP country', 'good', 0, '');
       else add('language region',
-        'device <code>'+esc(devLang)+'</code>'+(langRegion?' → region <b>'+esc(langRegion)+'</b>':'')+' · consistent with the IP country', 'good', 0, '');
+        'device <code>'+esc(devLang)+'</code> carries no region tag — consistency not checked', 'na', 0, '');
     }
 
     /* verdict */
